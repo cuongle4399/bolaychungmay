@@ -34,10 +34,6 @@
 <script>
     const questionSelect = document.getElementById('questionSelect');
     const quizContainer = document.getElementById('quizContainer');
-    const userSelectionDiv = document.getElementById('userSelection');
-    const selectedTextSpan = document.getElementById('selectedText');
-    const showAnswerBtn = document.getElementById('showAnswerBtn');
-    const nextBtn = document.getElementById('nextBtn');
     const resultContainer = document.getElementById('resultContainer');
     
     let currentQuestionIndex = 0;
@@ -69,7 +65,6 @@
         showAnswerBtn.style.display = 'inline-block';
         nextBtn.style.display = 'none';
         nextBtn.disabled = true;
-        userSelectionDiv.style.display = 'none';
         resultContainer.innerHTML = '';
         
         const q = quizData[index];
@@ -112,23 +107,7 @@
             li.classList.add('selected');
         }
         
-        updateSelectionDisplay();
-        
         showAnswerBtn.disabled = selectedOptions.size !== correctAnswerCount;
-    }
-
-    function updateSelectionDisplay() {
-        const q = quizData[currentQuestionIndex];
-        const selectedTexts = Array.from(selectedOptions)
-            .map(idx => q.options[idx].text)
-            .join(', ');
-        
-        if (selectedTexts) {
-            selectedTextSpan.textContent = selectedTexts;
-            userSelectionDiv.style.display = 'block';
-        } else {
-            userSelectionDiv.style.display = 'none';
-        }
     }
 
     function showAnswer() {
@@ -165,6 +144,7 @@
         if (allCorrect) {
             resultDiv.classList.add('result-correct');
             resultDiv.textContent = '✓ Chính xác!';
+            correctCount++;
         } else {
             resultDiv.classList.add('result-incorrect');
             resultDiv.textContent = '✗ Sai rồi!';
@@ -172,10 +152,6 @@
         
         resultContainer.innerHTML = '';
         resultContainer.appendChild(resultDiv);
-        
-        if (allCorrect) {
-            correctCount++;
-        }
         
         nextBtn.style.display = 'inline-block';
         nextBtn.disabled = false;
@@ -191,7 +167,6 @@
     
     function showFinalScore() {
         quizContainer.innerHTML = '';
-        userSelectionDiv.style.display = 'none';
         resultContainer.innerHTML = '';
         showAnswerBtn.style.display = 'none';
         nextBtn.style.display = 'none';
@@ -204,9 +179,8 @@
                 <h2>🎉 Hoàn Thành!</h2>
                 <div class="score-text">Bạn trả lời đúng <strong>${correctCount}/${totalQuestions}</strong> câu</div>
                 <div class="score-text">Điểm số: <strong>${percentage}%</strong></div>
-        `;
+            </div>`;
         
-        scoreHTML += '</div>';
         resultContainer.innerHTML = scoreHTML;
     }
     
@@ -223,7 +197,7 @@
         }
 
         let content = 'CCNA 2 v7 - Modules 7-9 Exam\n';
-        content += '=' .repeat(50) + '\n\n';
+        content += '='.repeat(50) + '\n\n';
         
         quizData.forEach((q, index) => {
             content += `Câu ${index + 1}: ${q.question}\n`;
