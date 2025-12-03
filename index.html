@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCNA 2 v7 - Modules 7-9 Exam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>CCNA 2 v7 Modules 7-9</h1>
+    
+    <div class="nav-controls">
+        <label>Select Question: 
+            <select id="questionSelect" onchange="loadQuestion(this.value)"></select>
+        </label>
+    </div>
+
+    <div id="quizContainer"></div>
+    
+    <div id="userSelection" class="user-selection" style="display: none;">
+        <strong>Bạn chọn:</strong> <span id="selectedText"></span>
+    </div>
+
+    <div id="resultContainer"></div>
+
+    <div class="button-group">
+        <button class="btn" id="showAnswerBtn" onclick="showAnswer()" disabled>Hiển Thị Đáp Án</button>
+        <button class="btn" id="nextBtn" onclick="nextQuestion()" disabled style="display: none;">Câu Tiếp Theo</button>
+        <button class="btn" onclick="restartQuiz()" style="background-color: #6c757d;">Bắt Đầu Lại</button>
+        <button class="btn" onclick="exportToTxt()" style="background-color: #28a745;">Xuất File</button>
+    </div>
+</div>
+
+<script src="questions.js"></script>
+<script>
+    const questionSelect = document.getElementById('questionSelect');
+    const quizContainer = document.getElementById('quizContainer');
+    const userSelectionDiv = document.getElementById('userSelection');
+    const selectedTextSpan = document.getElementById('selectedText');
+    const showAnswerBtn = document.getElementById('showAnswerBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    
+    let currentQuestionIndex = 0;
+    let selectedOptions = new Set();
+    let answerRevealed = false;
+    let correctAnswerCount = 0;
+    let correctCount = 0;
+
+    function init() {
+        if (typeof quizData === 'undefined') {
+            quizContainer.innerHTML = '<p style="color: red;">Lỗi: Không tìm thấy file questions.js</p>';
+            return;
+        }
+        
+        quizData.forEach((q, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.text = `Question ${q.id}`;
+            questionSelect.appendChild(option);
+        });
+        loadQuestion(0);
+    }
+
+    function loadQuestion(index) {
+        currentQuestionIndex = index;
+        selectedOptions = new Set();
+        answerRevealed = false;
+        showAnswerBtn.disabled = true;
+        showAnswerBtn.style.display = 'inline-block';
+        nextBtn.style.display = 'none';
+        nextBtn.disabled = true;
+        userSelectionDiv.style.display = 'none';
+        resultContainer.innerHTML = '';
+        
+        const q = quizData[index];
+        correctAnswerCount = q.options.filter(opt => opt.correct).length;
+        
+        let html = `<div class="question-box">`;
+        html += `<div class="question-text">${q.id}. ${q.question}</div>`;
+        
+        if (correctAnswerCount > 1) {
+            html += `<div class="question-hint">⚠️ Chọn ${correctAnswerCount} đáp án đúng</div>`;
+        }
+        
+        html += `<ul class="options-list" id="optionsList">`;
+        
+        q.options.forEach((opt, i) => {
+            html += `<li id="opt-${i}" onclick="selectOption(${i})">${opt.text}</li>`;
+        });
+
+        html += `</ul></div>`;
+        quizContainer.innerHTML = html;
+        
+        questionSelect.value = index;
+    }
+
+    function selectOption(index) {
+        if (answerRevealed) return;
+        
+        const li = document.getElementById(`opt-${index}`);
+        
+        if (selectedOptions.has(index)) {
+            selectedOptions.delete(index);
+            li.classList.remove('selected');
+        } else {
+            if (selectedOptions.size >= correctAnswerCount) {
+                alert(`Bạn chỉ được chọn ${correctAnswerCount} đáp án!`);
+                return;
+            }
+            
+            selectedOptions.add(index);
+            li.classList.add('selected');
+        }
+        
+        updateSelectionDisplay();
+        
+        showAnswerBtn.disabled = selectedOptions.size !== correctAnswerCount;
+    }
+
+    function updateSelectionDisplay() {
+        const q = quizData[currentQuestionIndex];
+        const selectedTexts = Array.from(selectedOptions)
+            .map(idx => q.options[idx].text)
+            .join(', ');
+        
+        if (selectedTexts) {
+            selectedTextSpan.textContent = selectedTexts;
+            userSelectionDiv.style.display = 'block';
+        } else {
+            userSelectionDiv.style.display = 'none';
+        }
+    }
+
+    function showAnswer() {
+        if (selectedOptions.size !== correctAnswerCount) {
+            alert(`Vui lòng chọn đủ ${correctAnswerCount} đáp án!`);
+            return;
+        }
+        
+        answerRevealed = true;
+        showAnswerBtn.disabled = true;
+        showAnswerBtn.style.display = 'none';
+        
+        const q = quizData[currentQuestionIndex];
+        let allCorrect = true;
+        
+        q.options.forEach((opt, i) => {
+            const li = document.getElementById(`opt-${i}`);
+            if (li) {
+                li.style.pointerEvents = 'none';
+                li.classList.add('disabled');
+                
+                if (opt.correct) {
+                    li.classList.add('correct-reveal');
+                } else if (selectedOptions.has(i)) {
+                    li.classList.add('incorrect-reveal');
+                    allCorrect = false;
+                }
+            }
+        });
+        
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'result-display';
+        
+        if (allCorrect) {
+            resultDiv.classList.add('result-correct');
+            resultDiv.textContent = '✓ Chính xác!';
+        } else {
+            resultDiv.classList.add('result-incorrect');
+            resultDiv.textContent = '✗ Sai rồi!';
+        }
+        
+        resultContainer.innerHTML = '';
+        resultContainer.appendChild(resultDiv);
+        
+        if (allCorrect) {
+            correctCount++;
+        }
+        
+        nextBtn.style.display = 'inline-block';
+        nextBtn.disabled = false;
+    }
+    
+    function nextQuestion() {
+        if (currentQuestionIndex < quizData.length - 1) {
+            loadQuestion(currentQuestionIndex + 1);
+        } else {
+            showFinalScore();
+        }
+    }
+    
+    function showFinalScore() {
+        quizContainer.innerHTML = '';
+        userSelectionDiv.style.display = 'none';
+        resultContainer.innerHTML = '';
+        showAnswerBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        
+        const totalQuestions = quizData.length;
+        const percentage = Math.round((correctCount / totalQuestions) * 100);
+        
+        let scoreHTML = `
+            <div class="final-score">
+                <h2>🎉 Hoàn Thành!</h2>
+                <div class="score-text">Bạn trả lời đúng <strong>${correctCount}/${totalQuestions}</strong> câu</div>
+                <div class="score-text">Điểm số: <strong>${percentage}%</strong></div>
+        `;
+        
+        scoreHTML += '</div>';
+        resultContainer.innerHTML = scoreHTML;
+    }
+    
+    function restartQuiz() {
+        correctCount = 0;
+        currentQuestionIndex = 0;
+        loadQuestion(0);
+    }
+
+    function exportToTxt() {
+        if (typeof quizData === 'undefined') {
+            alert('Không có dữ liệu để xuất!');
+            return;
+        }
+
+        let content = 'CCNA 2 v7 - Modules 7-9 Exam\n';
+        content += '=' .repeat(50) + '\n\n';
+        
+        quizData.forEach((q, index) => {
+            content += `Câu ${index + 1}: ${q.question}\n`;
+            
+            q.options.forEach((opt, i) => {
+                const isCorrect = opt.correct ? ' [ĐÚNG]' : '';
+                content += `  ${String.fromCharCode(65 + i)}) ${opt.text}${isCorrect}\n`;
+            });
+            
+            content += '\n';
+        });
+        
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'CCNA_Exam.txt';
+        link.click();
+    }
+
+    init();
+</script>
+
+</body>
+</html>
