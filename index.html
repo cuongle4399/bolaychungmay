@@ -3,221 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCNA 2 v7 - Modules 7-9 Exam</title>
+    <title>CCNA 2 v7 Exam & Labs</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>CCNA 2 v7 Modules 7-9 [deo thich hoc bai]</h1>
-    
-    <div class="nav-controls">
-        <label>Select Question: 
-            <select id="questionSelect" onchange="loadQuestion(this.value)"></select>
-        </label>
+    <h1>CCNA 2 v7 – Practice</h1>
+
+    <div class="tab-container">
+        <button class="tab-link active" onclick="openTab(event, 'quiz-view')">Quiz Exam</button>
+        <button class="tab-link" onclick="openTab(event, 'itn-view')">ITN Lab</button>
+        <button class="tab-link" onclick="openTab(event, 'srwe1-view')">SRWE Part 1</button>
+        <button class="tab-link" onclick="openTab(event, 'srwe2-view')">SRWE Part 2</button>
     </div>
 
-    <div id="quizContainer"></div>
+    <div id="quiz-view" class="download-area active">
+        <div class="exam-status">
+            <span id="statusText">Exam in progress</span>
+            <span id="scoreText">Correct: 0</span>
+        </div>
 
-    <div id="resultContainer"></div>
+        <div class="quiz-wrapper">
+            <div id="quizContainer"></div>
+            <div id="resultContainer" class="result-overlay"></div>
+        </div>
 
-    <div class="button-group">
-        <button class="btn" id="showAnswerBtn" onclick="showAnswer()" disabled>Hiển Thị Đáp Án</button>
-        <button class="btn" id="nextBtn" onclick="nextQuestion()" disabled style="display: none;">Câu Tiếp Theo</button>
-        <button class="btn" onclick="restartQuiz()" style="background-color: #6c757d;">Bắt Đầu Lại</button>
-        <button class="btn" onclick="exportToTxt()" style="background-color: #28a745;">Xuất File Tài liệu :))</button>
-        <a href="https://itexamanswers.net/ccna-2-v7-modules-7-9-available-and-reliable-networks-exam-answers.html" target="_blank" class="btn">Nguồn dữ liệu từ : itexamanswers</a>
+        <div class="button-group">
+            <button class="btn primary" id="submitBtn" onclick="submitAnswer()" disabled>Submit</button>
+            <button class="btn" id="nextBtn" onclick="nextQuestion()" disabled style="display:none;">Next</button>
+            <button class="btn secondary" onclick="restartExam()">Restart Exam</button>
+        </div>
+    </div>
+
+    <div id="itn-view" class="download-area">
+        <div class="file-card">
+            <h2>ITN Practice PT Skills Assessment</h2>
+            <p>Tải xuống file thực hành cấu hình cơ bản mạng (Introduction to Networks).</p>
+            <a href="File/ITN Practice PT Skills Assessment (PTSA).pka" class="btn primary" download>Download .pka File</a>
+            <a href="https://itexamanswers.net/ccna-1-v7-0-itn-practice-pt-skills-assessment-ptsa-answers.html" style="margin-top: 20px">Link giải</a>
+        </div>
+    </div>
+
+    <div id="srwe1-view" class="download-area">
+        <div class="file-card">
+            <h2>SRWE Practice PTSA - Part 1</h2>
+            <p>Tải xuống file thực hành Switching, Routing, and Wireless Essentials Part 1.</p>
+            <a href="File/SRWE Practice PT Skills Assessment (PTSA) - Part1.pka" class="btn primary" download>Download .pka File</a>
+            <a href="https://itexamanswers.net/ccna-2-srwe-practice-pt-skills-assessment-ptsa-part-1-answers.html" style="margin-top: 20px;">Link giải</a>
+
+        </div>
+    </div>
+
+    <div id="srwe2-view" class="download-area">
+        <div class="file-card">
+            <h2>SRWE Practice PTSA - Part 2</h2>
+            <p>Tải xuống file thực hành Switching, Routing, and Wireless Essentials Part 2.</p>
+            <a href="File/SRWE Practice PT Skills Assessment (PTSA) - Part2.pka" class="btn primary" download>Download .pka File</a>
+            <a href="https://itexamanswers.net/ccna-2-srwe-practice-pt-skills-assessment-ptsa-part-2-answers.html" style="margin-top: 20px">Link giải</a>
+        </div>
     </div>
 </div>
 
 <script src="questions.js"></script>
 <script>
-    const questionSelect = document.getElementById('questionSelect');
-    const quizContainer = document.getElementById('quizContainer');
-    const resultContainer = document.getElementById('resultContainer');
+/* ================== TAB LOGIC ================== */
+function openTab(evt, viewId) {
+    const downloadAreas = document.getElementsByClassName("download-area");
+    for (let i = 0; i < downloadAreas.length; i++) {
+        downloadAreas[i].classList.remove("active");
+    }
+
+    const tabLinks = document.getElementsByClassName("tab-link");
+    for (let i = 0; i < tabLinks.length; i++) {
+        tabLinks[i].classList.remove("active");
+    }
+
+    document.getElementById(viewId).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+/* ================== QUIZ ENGINE (Giữ nguyên logic của bạn) ================== */
+const QUESTIONS_PER_EXAM = 56; 
+let examData = [];
+let currentIndex = 0;
+let correctCount = 0;
+let selectedOptions = new Set();
+let userHistory = [];
+
+const quizContainer = document.getElementById('quizContainer');
+const resultContainer = document.getElementById('resultContainer');
+const submitBtn = document.getElementById('submitBtn');
+const nextBtn = document.getElementById('nextBtn');
+const statusText = document.getElementById('statusText');
+const scoreText = document.getElementById('scoreText');
+
+function init() {
+    examData = [...quizData].sort(() => 0.5 - Math.random()).slice(0, QUESTIONS_PER_EXAM);
+    currentIndex = 0;
+    correctCount = 0;
+    userHistory = [];
+    loadQuestion();
+}
+
+function loadQuestion() {
+    selectedOptions.clear();
+    const question = examData[currentIndex];
+    statusText.textContent = `Question ${currentIndex + 1} of ${examData.length}`;
+    scoreText.textContent = `Correct: ${correctCount}`;
+
+    let html = `<div class="question-text">${question.question}</div>`;
+    if (question.type === 'multi') {
+        html += `<div class="question-hint">(Choose multiple answers)</div>`;
+    }
+
+    html += `<ul class="options-list">`;
+    question.options.forEach((opt, i) => {
+        html += `<li onclick="toggleOption(${i})">${opt.text}</li>`;
+    });
+    html += `</ul>`;
+
+    quizContainer.innerHTML = html;
+    resultContainer.classList.remove('show');
+    submitBtn.disabled = true;
+    nextBtn.style.display = 'none';
+    submitBtn.style.display = 'inline-block';
+}
+
+function toggleOption(index) {
+    const question = examData[currentIndex];
+    if (question.type === 'single') selectedOptions.clear();
     
-    let currentQuestionIndex = 0;
-    let selectedOptions = new Set();
-    let answerRevealed = false;
-    let correctAnswerCount = 0;
-    let correctCount = 0;
+    if (selectedOptions.has(index)) selectedOptions.delete(index);
+    else selectedOptions.add(index);
 
-    function init() {
-        if (typeof quizData === 'undefined') {
-            quizContainer.innerHTML = '<p style="color: red;">Lỗi: Không tìm thấy file questions.js</p>';
-            return;
-        }
-        
-        quizData.forEach((q, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.text = `Question ${q.id}`;
-            questionSelect.appendChild(option);
-        });
-        loadQuestion(0);
-    }
+    const items = document.querySelectorAll('.options-list li');
+    items.forEach((li, i) => {
+        li.classList.toggle('selected', selectedOptions.has(i));
+    });
+    submitBtn.disabled = selectedOptions.size === 0;
+}
 
-    function loadQuestion(index) {
-        currentQuestionIndex = index;
-        selectedOptions = new Set();
-        answerRevealed = false;
-        showAnswerBtn.disabled = true;
-        showAnswerBtn.style.display = 'inline-block';
-        nextBtn.style.display = 'none';
-        nextBtn.disabled = true;
-        resultContainer.innerHTML = '';
-        
-        const q = quizData[index];
-        correctAnswerCount = q.options.filter(opt => opt.correct).length;
-        
-        let html = `<div class="question-box">`;
-        html += `<div class="question-text">${q.id}. ${q.question}</div>`;
-        
-        if (correctAnswerCount > 1) {
-            html += `<div class="question-hint">⚠️ Chọn ${correctAnswerCount} đáp án đúng</div>`;
-        }
-        
-        html += `<ul class="options-list" id="optionsList">`;
-        
-        q.options.forEach((opt, i) => {
-            html += `<li id="opt-${i}" onclick="selectOption(${i})">${opt.text}</li>`;
-        });
+function submitAnswer() {
+    const question = examData[currentIndex];
+    const items = document.querySelectorAll('.options-list li');
+    let isCorrect = true;
+    let selectedTexts = [];
+    let correctTexts = question.options.filter(o => o.correct).map(o => o.text);
 
-        html += `</ul></div>`;
-        quizContainer.innerHTML = html;
-        
-        questionSelect.value = index;
-    }
+    question.options.forEach((opt, i) => {
+        const li = items[i];
+        li.classList.add('disabled');
+        if (selectedOptions.has(i)) selectedTexts.push(opt.text);
+        if (opt.correct) li.classList.add('correct-reveal');
+        else if (selectedOptions.has(i)) {
+            li.classList.add('incorrect-reveal');
+            isCorrect = false;
+        }
+    });
 
-    function selectOption(index) {
-        if (answerRevealed) return;
-        
-        const li = document.getElementById(`opt-${index}`);
-        
-        if (selectedOptions.has(index)) {
-            selectedOptions.delete(index);
-            li.classList.remove('selected');
-        } else {
-            if (selectedOptions.size >= correctAnswerCount) {
-                alert(`Bạn chỉ được chọn ${correctAnswerCount} đáp án!`);
-                return;
-            }
-            
-            selectedOptions.add(index);
-            li.classList.add('selected');
-        }
-        
-        showAnswerBtn.disabled = selectedOptions.size !== correctAnswerCount;
-    }
-
-    function showAnswer() {
-        if (selectedOptions.size !== correctAnswerCount) {
-            alert(`Vui lòng chọn đủ ${correctAnswerCount} đáp án!`);
-            return;
-        }
-        
-        answerRevealed = true;
-        showAnswerBtn.disabled = true;
-        showAnswerBtn.style.display = 'none';
-        
-        const q = quizData[currentQuestionIndex];
-        let allCorrect = true;
-        
-        q.options.forEach((opt, i) => {
-            const li = document.getElementById(`opt-${i}`);
-            if (li) {
-                li.style.pointerEvents = 'none';
-                li.classList.add('disabled');
-                
-                if (opt.correct) {
-                    li.classList.add('correct-reveal');
-                } else if (selectedOptions.has(i)) {
-                    li.classList.add('incorrect-reveal');
-                    allCorrect = false;
-                }
-            }
-        });
-        
-        const resultDiv = document.createElement('div');
-        resultDiv.className = 'result-display';
-        
-        if (allCorrect) {
-            resultDiv.classList.add('result-correct');
-            resultDiv.textContent = '✓ Chính xác!';
-            correctCount++;
-        } else {
-            resultDiv.classList.add('result-incorrect');
-            resultDiv.textContent = '✗ Sai rồi!';
-        }
-        
-        resultContainer.innerHTML = '';
-        resultContainer.appendChild(resultDiv);
-        
-        nextBtn.style.display = 'inline-block';
-        nextBtn.disabled = false;
-    }
+    const totalCorrect = question.options.filter(o => o.correct).length;
+    if (selectedOptions.size !== totalCorrect) isCorrect = false;
+    if (isCorrect) correctCount++;
     
-    function nextQuestion() {
-        if (currentQuestionIndex < quizData.length - 1) {
-            loadQuestion(currentQuestionIndex + 1);
-        } else {
-            showFinalScore();
-        }
-    }
-    
-    function showFinalScore() {
-        quizContainer.innerHTML = '';
-        resultContainer.innerHTML = '';
-        showAnswerBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-        
-        const totalQuestions = quizData.length;
-        const percentage = Math.round((correctCount / totalQuestions) * 100);
-        
-        let scoreHTML = `
-            <div class="final-score">
-                <h2>🎉 Hoàn Thành!</h2>
-                <div class="score-text">Bạn trả lời đúng <strong>${correctCount}/${totalQuestions}</strong> câu</div>
-                <div class="score-text">Điểm số: <strong>${percentage}%</strong></div>
-            </div>`;
-        
-        resultContainer.innerHTML = scoreHTML;
-    }
-    
-    function restartQuiz() {
-        correctCount = 0;
-        currentQuestionIndex = 0;
-        loadQuestion(0);
-    }
+    userHistory.push({
+        question: question.question,
+        selected: selectedTexts,
+        correct: correctTexts,
+        isCorrect: isCorrect
+    });
 
-    function exportToTxt() {
-        if (typeof quizData === 'undefined') {
-            alert('Không có dữ liệu để xuất!');
-            return;
-        }
+    const result = document.createElement('div');
+    result.className = 'result-display ' + (isCorrect ? 'result-correct' : 'result-incorrect');
+    result.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
+    resultContainer.innerHTML = '';
+    resultContainer.appendChild(result);
+    resultContainer.classList.add('show');
 
-        let content = 'CCNA 2 v7 - Modules 7-9 Exam\n';
-        content += '='.repeat(50) + '\n\n';
-        
-        quizData.forEach((q, index) => {
-            content += `Câu ${index + 1}: ${q.question}\n`;
-            
-            q.options.forEach((opt, i) => {
-                const isCorrect = opt.correct ? ' [ĐÚNG]' : '';
-                content += `  ${String.fromCharCode(65 + i)}) ${opt.text}${isCorrect}\n`;
-            });
-            
-            content += '\n';
+    submitBtn.style.display = 'none';
+    nextBtn.style.display = 'inline-block';
+    nextBtn.disabled = false;
+    scoreText.textContent = `Correct: ${correctCount}`;
+}
+
+function nextQuestion() {
+    if (currentIndex < examData.length - 1) {
+        currentIndex++;
+        loadQuestion();
+    } else finishExam();
+}
+
+function finishExam() {
+    const percentage = ((correctCount / examData.length) * 100).toFixed(1);
+    const wrongAnswers = userHistory.filter(h => !h.isCorrect);
+    let html = `<div style="text-align:center; padding: 20px;">
+                    <h2 style="color: #0d6efd;">Exam Finished!</h2>
+                    <div style="font-size: 40px; font-weight: bold; margin: 10px 0;">${percentage}%</div>
+                    <p>You got <strong>${correctCount}</strong> out of <strong>${examData.length}</strong> correct.</p>
+                </div><hr>`;
+
+    if (wrongAnswers.length > 0) {
+        html += `<h3 style="color: #dc3545;">Incorrect Questions:</h3>`;
+        wrongAnswers.forEach(item => {
+            html += `<div style="margin-bottom: 20px; padding: 15px; background: #fff5f5; border-left: 5px solid #dc3545; border-radius: 5px;">
+                        <p><strong>Q: ${item.question}</strong></p>
+                        <p style="color: #dc3545;">✘ Your Answer: ${item.selected.join(', ') || 'No answer'}</p>
+                        <p style="color: #28a745;">✔ Correct Answer: ${item.correct.join(', ')}</p>
+                    </div>`;
         });
-        
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'CCNA_Exam.txt';
-        link.click();
-    }
+    } else html += `<p style="color: #28a745; text-align: center; font-weight: bold;">Perfect score! Well done.</p>`;
 
+    quizContainer.innerHTML = html;
+    resultContainer.style.display = 'none';
+    submitBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    statusText.textContent = "Review Results";
+}
+
+function restartExam() {
     init();
+}
+
+// Khởi tạo ứng dụng
+init();
 </script>
 
 </body>
